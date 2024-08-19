@@ -1,0 +1,145 @@
+---
+title: 'EDS 221 Day 6: Activity'
+author: "Takeen Shamloo"
+date: "2024-08-19"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Day 6: Activity
+
+## Task 2 ----
+
+```{r}
+# Load Packages ----
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+## Read/Process Data
+
+```{r}
+lobsters <- read_csv(here("data","Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) |>
+  clean_names() |>
+  uncount(count) # Uses the number in the 'count' column to determine how many times it will duplicate that row of data.
+  
+head(lobsters)
+```
+
+## Find counts and mean sizes by site & year
+
+```{r}
+lobster_summary <- lobsters |>
+  dplyr::group_by(site, year) |>
+  summarize(total_count = n(),
+            mean_carapace_len = mean(size_mm, na.rm = TRUE))
+```
+
+### Plot summarized data by site and year
+
+```{r}
+ggplot(lobster_summary, aes(x = year, y = total_count, colour = site)) +
+  geom_point() +
+  geom_line() + 
+  facet_wrap(~ site) +
+  labs(x = "Year", y = "Lobster Count", title = "Lobster Count per Year")
+```
+
+## Find the proportion of legal lobsters at each site in 2020
+
+```{r}
+legal_lobsters_2020 <- lobsters |>
+  filter(year == 2020) |>
+  mutate(legal = case_when(
+    size_mm < 79.76 ~ FALSE,
+    size_mm >= 79.76 ~ TRUE)) |>
+  group_by(site, legal) |>
+  summarize(total_count = n()) 
+```
+
+### Plot proportion of legal lobsters using stacked column graph
+
+```{r}
+ggplot(legal_lobsters_2020, aes(x = site, y = total_count, fill = legal)) + 
+  geom_col(position = "fill") + 
+  labs(y = "Proportion", x = "Site", fill = "Legal Status") +
+  theme_minimal()
+```
+
+NAPL and IVEE had the largest proportion of legal lobsters in 2020.
+
+## Task 3 ----
+
+### filter() practice ----
+```{r}
+ex_a <- lobsters |>
+  filter(site == c("IVEE", "CARP", "NAPL"))
+
+ex_b <- lobsters |>
+  filter(month == 8)
+
+ex_c <- lobsters |>
+  filter(site == "AQUE" | size_mm > 70)
+
+ex_d <- lobsters |>
+  filter(site != "NAPL")
+```
+
+### group_by() practice ----
+
+```{r}
+ex_e <- lobsters |>
+  group_by(site) |>
+  summarize(mean_len = mean(size_mm, na.rm = TRUE),
+            std_len = sd(size_mm, na.rm = TRUE))
+
+ex_f <- lobsters |>
+  group_by(site, month) |>
+  summarise(max_len = max(size_mm, na.rm = TRUE))
+```
+
+### mutate() practice
+
+```{r}
+ex_g <- lobsters |>
+  mutate(size_cm = size_mm/10)
+
+ex_h <- lobsters |>
+  mutate(site = tolower(site))
+
+ex_i <- lobsters |>
+  mutate(area = as.character(area))
+class(ex_i$area) 
+typeof(ex_i$area)
+```
+
+### case_when() practice ----
+
+```{r}
+ex_j <- lobsters |>
+  mutate(size_bin = case_when(
+    size_mm <= 70 ~ "small",
+    size_mm > 70 ~ "large"
+  ))
+head(ex_j$size_bin)
+
+ex_k <- lobsters |>
+  mutate(designation = case_when(
+    (site == "IVEE" | site == "NAPL") ~ "MPA",
+    !(site == "IVEE" | site == "NAPL") ~ "not MPA"
+  ))
+head(ex_k$designation)
+tail(ex_k$designation)
+```
+
+```
+
+
+
+
